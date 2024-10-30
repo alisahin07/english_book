@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Segment Atlama ve Tekrar</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        #player-container {
+            margin-top: 20px;
+        }
+        #controls {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 0 5px;
+            border: none;
+            cursor: pointer;
+            color: #fff;
+        }
+        #skip-button {
+            background-color: #007bff;
+        }
+        #repeat-button {
+            background-color: #28a745;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Video Segment Atlama ve Tekrar</h1>
+
+    <!-- YouTube Video Player -->
+    <div id="player-container">
+        <div id="player"></div>
+    </div>
+
+    <!-- Kontrol Butonları -->
+    <div id="controls">
+        <button id="skip-button">Atla</button>
+        <button id="repeat-button">Tekrar</button>
+    </div>
+
+    <!-- Tekrar Sayacı -->
+    <label for="repeat-count">Tekrar Sayısı:</label>
+    <input type="number" id="repeat-count" min="1" value="1">
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        var player;
+        var segmentIndex = 0;
+        var segmentDuration = 10 * 60; // Segment süresi (10 dakika)
+        var repeatCount = 1;
+        var currentRepeat = 0;
+        var checkInterval;
+
+        // YouTube API hazır olunca çağrılacak fonksiyon
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '390',
+                width: '640',
+                videoId: 'R0D6nPOHx2k', // Buraya video ID'sini yaz
+                playerVars: { 'playsinline': 1 },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        // Video hazır olunca çalışacak fonksiyon
+        function onPlayerReady(event) {
+            document.getElementById("skip-button").addEventListener("click", skipSegment);
+            document.getElementById("repeat-button").addEventListener("click", setRepeatCount);
+        }
+
+        // Tüm segmentler için tekrar sayısını ayarlayan fonksiyon
+        function setRepeatCount() {
+            repeatCount = parseInt(document.getElementById("repeat-count").value);
+            currentRepeat = 0;
+            segmentIndex = 0; // İlk segmentten başlat
+            playSegment();
+        }
+
+        // Segment atlama fonksiyonu
+        function skipSegment() {
+            clearInterval(checkInterval); // Önceki interval'i temizle
+            segmentIndex++;
+            currentRepeat = 0;
+            playSegment();
+        }
+
+        // Belirli bir segmenti başlatma ve tekrar etme fonksiyonu
+        function playSegment() {
+            var startTime = segmentIndex * segmentDuration;
+            var endTime = startTime + segmentDuration;
+            player.seekTo(startTime, true);
+            player.playVideo();
+
+            // Video sonuna yaklaşıldığında kontrol et
+            checkInterval = setInterval(function() {
+                if (player.getCurrentTime() >= endTime) {
+                    player.pauseVideo();
+                    currentRepeat++;
+
+                    // Tekrar sayısı dolmadıysa segmenti yeniden başlat
+                    if (currentRepeat < repeatCount) {
+                        player.seekTo(startTime, true);
+                        player.playVideo();
+                    } else {
+                        clearInterval(checkInterval); // Tekrar bittiğinde interval'i temizle
+                        currentRepeat = 0;
+                    }
+                }
+            }, 1000); // Her saniyede kontrol et
+        }
+
+        // Video oynatma durumu değiştiğinde çalışacak fonksiyon
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED && currentRepeat < repeatCount) {
+                playSegment();
+            }
+        }
+    </script>
+</body>
+</html>
