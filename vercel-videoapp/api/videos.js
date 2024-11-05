@@ -1,19 +1,12 @@
 const mysql = require('mysql');
 
-// Veritabanı bağlantısı
-const db = mysql.createConnection({
+// Veritabanı bağlantı havuzu oluştur
+const db = mysql.createPool({
+    connectionLimit: 10,
     host: 'database-1.cpcoaa4m8rfg.eu-west-1.rds.amazonaws.com',
     user: 'admin',
     password: 'password',
     database: 'video_database'
-});
-
-db.connect((err) => {
-    if (err) {
-        console.error('Veritabanına bağlanırken hata oluştu:', err);
-    } else {
-        console.log('Veritabanına başarıyla bağlanıldı.');
-    }
 });
 
 module.exports = async (req, res) => {
@@ -22,8 +15,11 @@ module.exports = async (req, res) => {
     }
 
     const query = 'SELECT * FROM video_translations';
+
+    // Havuzdan bağlantı al ve sorguyu çalıştır
     db.query(query, (err, results) => {
         if (err) {
+            console.error('Veritabanı sorgusunda hata oluştu:', err);
             res.status(500).json({ error: 'Veritabanı sorgusunda hata oluştu.' });
             return;
         }
