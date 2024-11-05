@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API'den Gelen Video Verileri</title>
+</head>
+<body>
+    <h1>API'den Gelen YouTube Videoları</h1>
+    <div id="videoContainer">Yükleniyor...</div>
+
+    <script>
+        async function fetchVideoData() {
+            try {
+                const response = await fetch("https://85bqlj8yxb.execute-api.eu-west-1.amazonaws.com/dev");
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                const result = await response.json();
+                const videos = JSON.parse(result.body);
+
+                let htmlContent = '';
+                videos.forEach((video, index) => {
+                    htmlContent += `
+                        <div class="video">
+                            <h2>${video.video_name}</h2>
+                            <label for="text${index}"><strong>Türkçe Metin:</strong></label><br>
+                            <textarea id="text${index}" rows="10" cols="60">${video.turkish_text}</textarea><br>
+                            <button onclick="readText('text${index}')">Metni Oku</button>
+                            <iframe width="560" height="315" src="https://www.youtube.com/embed/${video.video_id}" 
+                                title="${video.video_name}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
+                            </iframe>
+                        </div>
+                        <hr>
+                    `;
+                });
+
+                document.getElementById("videoContainer").innerHTML = htmlContent;
+            } catch (error) {
+                document.getElementById("videoContainer").textContent = "Veri alınamadı: " + error.message;
+            }
+        }
+
+        function readText(textareaId) {
+            const text = document.getElementById(textareaId).value;
+            const sentences = text.split(/(?<=[.?!])\s+/); // Cümlelere ayırır
+            let index = 0;
+
+            function speakNextSentence() {
+                if (index < sentences.length) {
+                    const utterance = new SpeechSynthesisUtterance(sentences[index]);
+                    utterance.lang = 'tr-TR';
+                    utterance.rate = 1;
+
+                    utterance.onend = () => {
+                        index++;
+                        setTimeout(speakNextSentence, 500); // Sonraki cümle için kısa bir bekleme süresi
+                    };
+                    window.speechSynthesis.speak(utterance);
+                }
+            }
+
+            speakNextSentence(); // İlk cümleden başla
+        }
+
+        fetchVideoData();
+    </script>
+</body>
+</html>
